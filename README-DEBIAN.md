@@ -75,7 +75,7 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y git
 
 # 克隆项目
-git clone https://github.com/your-username/learnflow.git
+git clone https://github.com/xlj127317/learnflow.git
 cd learnflow
 ```
 
@@ -90,7 +90,17 @@ chmod +x deploy-debian.sh
 ./install-debian.sh
 ```
 
-### 步骤3: 部署应用
+### 步骤3: 配置环境变量
+
+```bash
+# 复制生产环境配置示例
+cp env.production.example .env
+
+# 编辑配置文件
+nano .env
+```
+
+### 步骤4: 部署应用
 
 ```bash
 # 启动所有服务
@@ -102,6 +112,158 @@ chmod +x deploy-debian.sh
 # 查看日志
 ./deploy-debian.sh logs
 ```
+
+## 🔧 环境变量配置详解
+
+### 配置文件结构
+
+LearnFlow项目包含多个环境变量配置文件，用于不同的部署场景：
+
+```
+learnflow/
+├── env.production.example          # 根目录生产环境配置（推荐使用）
+├── server/
+│   └── env.example               # 服务端环境变量配置
+└── .env                          # 实际使用的配置文件（不要提交到Git）
+```
+
+### 根目录 vs Server目录配置差异
+
+#### 1. 根目录配置 (`env.production.example`)
+
+**用途**: 生产环境部署的主要配置文件
+**特点**: 包含所有服务的配置，适合Docker Compose部署
+
+```bash
+# 数据库配置
+DATABASE_URL=postgresql://learnflow_user:YOUR_DB_PASSWORD@postgres:5432/learnflow
+POSTGRES_DB=learnflow
+POSTGRES_USER=learnflow_user
+POSTGRES_PASSWORD=YOUR_DB_PASSWORD
+
+# JWT配置
+JWT_SECRET=YOUR_JWT_SECRET_KEY_HERE
+JWT_EXPIRES_IN=7d
+
+# 服务器配置
+NODE_ENV=production
+PORT=3000
+HOST=0.0.0.0
+
+# 前端配置
+VITE_API_BASE_URL=http://127.0.0.1:3000/api
+
+# AI服务配置 (OpenRouter)
+OPENROUTER_API_KEY=YOUR_OPENROUTER_API_KEY_HERE
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_MODEL=gpt-3.5-turbo
+OPENROUTER_MAX_TOKENS=4000
+OPENROUTER_TEMPERATURE=0.7
+
+# 安全配置
+CORS_ORIGIN=http://127.0.0.1:8080
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# 性能优化配置
+NODE_OPTIONS=--max-old-space-size=512
+POSTGRES_SHARED_BUFFERS=256MB
+POSTGRES_EFFECTIVE_CACHE_SIZE=1GB
+POSTGRES_WORK_MEM=4MB
+POSTGRES_MAINTENANCE_WORK_MEM=64MB
+
+# 日志配置
+LOG_LEVEL=info
+LOG_FILE=/var/log/learnflow/app.log
+
+# 监控配置
+ENABLE_METRICS=true
+METRICS_PORT=9090
+```
+
+#### 2. Server目录配置 (`server/env.example`)
+
+**用途**: 服务端开发环境配置参考
+**特点**: 针对本地开发，数据库连接使用localhost
+
+```bash
+# 数据库配置
+DATABASE_URL=postgresql://learnflow_user:YOUR_DB_PASSWORD@localhost:5432/learnflow
+
+# JWT配置
+JWT_SECRET=YOUR_JWT_SECRET_KEY_HERE
+JWT_EXPIRES_IN=7d
+
+# 服务器配置
+NODE_ENV=production
+PORT=3000
+HOST=0.0.0.0
+
+# AI服务配置 (OpenRouter)
+OPENROUTER_API_KEY=YOUR_OPENROUTER_API_KEY_HERE
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_MODEL=gpt-3.5-turbo
+OPENROUTER_MAX_TOKENS=4000
+OPENROUTER_TEMPERATURE=0.7
+
+# 安全配置
+CORS_ORIGIN=http://localhost:8080
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# 日志配置
+LOG_LEVEL=info
+LOG_FILE=/var/log/learnflow/server.log
+
+# 性能配置
+NODE_OPTIONS=--max-old-space-size=512
+```
+
+### 关键配置项说明
+
+#### 数据库配置差异
+
+| 配置项 | 根目录配置 | Server配置 | 说明 |
+|--------|------------|------------|------|
+| DATABASE_URL | `@postgres:5432` | `@localhost:5432` | Docker容器间通信 vs 本地连接 |
+| 数据库主机 | `postgres` | `localhost` | Docker服务名 vs 本地地址 |
+
+#### AI服务配置（新增）
+
+```bash
+# OpenRouter API配置
+OPENROUTER_API_KEY=sk-or-v1-your-actual-api-key-here
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_MODEL=gpt-3.5-turbo
+OPENROUTER_MAX_TOKENS=4000
+OPENROUTER_TEMPERATURE=0.7
+```
+
+**重要**: OpenRouter API Key是AI功能必需的，需要单独获取。
+
+### 配置选择建议
+
+#### 生产环境部署（推荐）
+```bash
+# 使用根目录配置
+cp env.production.example .env
+```
+
+**优势**:
+- 配置完整，包含所有服务
+- 针对Docker部署优化
+- 包含性能调优参数
+
+#### 本地开发环境
+```bash
+# 使用server目录配置
+cp server/env.example .env
+```
+
+**优势**:
+- 配置简洁，适合开发
+- 数据库连接使用localhost
+- 便于本地调试
 
 ## 📊 资源分配
 
@@ -433,6 +595,8 @@ curl -w "@curl-format.txt" -o /dev/null -s http://localhost
 - [PostgreSQL 优化指南](https://www.postgresql.org/docs/current/runtime-config-resource.html)
 - [Nginx 性能调优](https://nginx.org/en/docs/)
 - [系统监控最佳实践](https://www.datadoghq.com/blog/monitoring-101-collecting-data/)
+- [AI服务配置指南](AI-SERVICE-SETUP.md)
+- [部署设置指南](DEPLOYMENT-SETUP.md)
 
 ## 🤝 技术支持
 

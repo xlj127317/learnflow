@@ -34,7 +34,7 @@ RUN apk add --no-cache curl dumb-init
 
 # 创建非root用户
 RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN adduser -S nodejs -u 1001
 
 # 复制package文件
 COPY package*.json ./
@@ -48,8 +48,8 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # 更改文件所有权
-RUN chown -R nextjs:nodejs /app
-USER nextjs
+RUN chown -R nodejs:nodejs /app
+USER nodejs
 
 # 暴露端口
 EXPOSE 3000
@@ -61,6 +61,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # 使用dumb-init作为PID 1，更好地处理信号
 ENTRYPOINT ["dumb-init", "--"]
 
-# 启动命令 - 使用PM2进行进程管理
+# 启动命令
 CMD ["npm", "start"]
 

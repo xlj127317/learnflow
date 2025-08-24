@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL 数据库 - 优化内存使用
   postgres:
@@ -98,11 +96,15 @@ services:
     ports:
       - "127.0.0.1:80:80"  # 只允许本地访问
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - learnflow-network
-    volumes:
-      - ./nginx.production.conf:/etc/nginx/nginx.conf:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -112,21 +114,27 @@ services:
           memory: 128M
           cpus: '0.1'
 
-  # Nginx 反向代理 - 轻量级配置
+  # Nginx 反向代理 - 优化配置
   nginx:
     image: nginx:alpine
     container_name: learnflow-nginx
     restart: always
     ports:
-      - "80:80"  # 外部访问端口
+      - "127.0.0.1:8080:80"  # 只允许本地访问
     volumes:
       - ./nginx.production.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro  # SSL证书目录
     depends_on:
-      - frontend
-      - backend
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
     networks:
       - learnflow-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -136,13 +144,16 @@ services:
           memory: 128M
           cpus: '0.1'
 
-volumes:
-  postgres_data:
-    driver: local
-
+# 网络配置
 networks:
   learnflow-network:
     driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: learnflow-br0
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# 数据卷配置
+volumes:
+  postgres_data:
+    driver: local
 

@@ -51,6 +51,17 @@ services:
       DATABASE_URL: postgresql://learnflow_user:${POSTGRES_PASSWORD:-learnflow_password}@postgres:5432/learnflow
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       PORT: 3000
+      HOST: 0.0.0.0
+      # AI服务配置
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-gpt-3.5-turbo}
+      OPENROUTER_MAX_TOKENS: ${OPENROUTER_MAX_TOKENS:-4000}
+      OPENROUTER_TEMPERATURE: ${OPENROUTER_TEMPERATURE:-0.7}
+      # 安全配置
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://127.0.0.1:8080}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
       # Node.js 内存优化
       NODE_OPTIONS: "--max-old-space-size=512"
     ports:

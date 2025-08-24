@@ -1,17 +1,17 @@
 # LearnFlow 项目根目录 .gitignore
 
-# 环境配置文件
+# 敏感环境配置文件（包含实际密码和密钥）
 .env
 .env.local
-.env.production
-.env.staging
+.env.production.local
+.env.staging.local
+
+# 包含实际密码的环境文件（这些文件不应该被提交）
 env.docker
 env.production
 
 # Docker相关
 docker-compose.override.yml
-docker-compose.prod.yml
-docker-compose.staging.yml
 .dockerignore
 
 # 日志文件
@@ -44,7 +44,6 @@ backups/
 backup/
 
 # 数据库文件
-*.sql
 *.sqlite
 *.db
 

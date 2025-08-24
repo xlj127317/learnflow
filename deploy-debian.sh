@@ -278,17 +278,21 @@ wait_for_database() {
 run_migrations() {
     log_info "执行数据库迁移..."
     
-    try {
-        # 生成Prisma客户端
-        docker-compose -f docker-compose.production.yml exec -T backend npx prisma generate
-        
-        # 执行迁移
-        docker-compose -f docker-compose.production.yml exec -T backend npx prisma migrate deploy
-        
+    # 生成Prisma客户端
+    if docker-compose -f docker-compose.production.yml exec -T backend npx prisma generate; then
+        log_success "Prisma客户端生成完成"
+    else
+        log_warning "Prisma客户端生成失败"
+        return 1
+    fi
+    
+    # 执行迁移
+    if docker-compose -f docker-compose.production.yml exec -T backend npx prisma migrate deploy; then
         log_success "数据库迁移完成"
-    } catch {
+    else
         log_warning "数据库迁移失败，请检查日志"
-    }
+        return 1
+    fi
 }
 
 # 显示服务状态

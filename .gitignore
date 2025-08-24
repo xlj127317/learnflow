@@ -1,0 +1,107 @@
+# LearnFlow 项目根目录 .gitignore
+
+# 环境配置文件
+.env
+.env.local
+.env.production
+.env.staging
+env.docker
+env.production
+
+# Docker相关
+docker-compose.override.yml
+docker-compose.prod.yml
+docker-compose.staging.yml
+.dockerignore
+
+# 日志文件
+*.log
+logs/
+log/
+
+# 临时文件
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE配置文件
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# 备份文件
+*.bak
+*.backup
+backups/
+backup/
+
+# 数据库文件
+*.sql
+*.sqlite
+*.db
+
+# 证书文件
+*.pem
+*.key
+*.crt
+*.csr
+ssl/
+certs/
+
+# 运行时文件
+.pid
+.sock
+*.pid
+
+# 缓存文件
+.cache/
+cache/
+
+# 临时目录
+tmp/
+temp/
+
+# 构建产物
+dist/
+build/
+out/
+
+# 依赖目录
+node_modules/
+vendor/
+
+# 测试覆盖率
+coverage/
+.nyc_output/
+
+# 包管理器文件
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 本地配置文件
+config.local.js
+config.local.json
+config.local.yml
+
+# 监控和性能文件
+*.prof
+*.cpuprofile
+*.heapsnapshot
+
+# 安全相关
+.secrets
+secrets/
+*.secret
+
+# 其他
+*.orig
+*.rej

@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: learnflow-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: learnflow
+      POSTGRES_USER: learnflow_user
+      POSTGRES_PASSWORD: learnflow_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/prisma/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U learnflow_user -d learnflow"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - learnflow-network
+
+  # 后端服务
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: learnflow-backend
+    restart: always
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://learnflow_user:learnflow_password@postgres:5432/learnflow
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    networks:
+      - learnflow-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: learnflow-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - learnflow-network
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: learnflow-nginx
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - learnflow-network
+
+volumes:
+  postgres_data:
+
+networks:
+  learnflow-network:
+    driver: bridge

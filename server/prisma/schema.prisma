@@ -1,0 +1,158 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户角色枚举
+enum Role {
+  USER
+  ADMIN
+}
+
+// 目标状态枚举
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+// 用户模型
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String   // 密码字段（必需）
+  role      Role     @default(USER)
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联关系
+  goals    Goal[]
+  plans    Plan[]
+  tasks    Task[]
+  aiTaskCompletions AITaskCompletion[]
+  checkins Checkin[]
+  reviews  Review[]
+
+  @@map("users")
+}
+
+// 目标模型
+model Goal {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  targetDate  DateTime?
+  status      GoalStatus @default(ACTIVE)
+  progress    Int        @default(0) // 0-100 百分比
+  userId      String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // 关联关系
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plans Plan[]
+
+  @@map("goals")
+}
+
+// 学习计划模型
+model Plan {
+  id            String   @id @default(cuid())
+  goalId        String
+  title         String
+  durationWeeks Int      // 计划持续周数
+  mermaidCode   String?  // Mermaid 流程图代码
+  content       String?  // 计划详细内容（JSON 格式）
+  progress      Int      @default(0) // 0-100 百分比
+  userId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // 关联关系
+  goal  Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks Task[]
+  aiTaskCompletions AITaskCompletion[]
+
+  @@map("plans")
+}
+
+// 任务模型
+model Task {
+  id        String   @id @default(cuid())
+  planId    String
+  title     String
+  week      Int      // 第几周
+  day       Int      // 第几天
+  completed Boolean  @default(false)
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联关系
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+}
+
+// AI任务完成状态模型
+model AITaskCompletion {
+  id        String   @id @default(cuid())
+  planId    String
+  taskKey   String   // 格式：week-{week}-day-{day}-{index}
+  completed Boolean  @default(false)
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联关系
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, taskKey, userId])
+
+  @@map("ai_task_completions")
+}
+
+// 打卡记录模型
+model Checkin {
+  id       String   @id @default(cuid())
+  date     DateTime @default(now())
+  duration Int      // 学习时长（分钟）
+  notes    String?  // 学习笔记
+  rating   Int?     // 学习效果评分 1-5
+  userId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联关系
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("checkins")
+}
+
+// 复盘记录模型
+model Review {
+  id      String   @id @default(cuid())
+  period  String   // 复盘周期："weekly", "monthly", "quarterly"
+  content String   // 复盘内容（JSON 格式）
+  userId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联关系
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}

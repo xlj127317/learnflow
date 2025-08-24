@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库 - 优化内存使用
+  postgres:
+    image: postgres:15-alpine
+    container_name: learnflow-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: learnflow
+      POSTGRES_USER: learnflow_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-learnflow_password}
+      # 优化PostgreSQL配置
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+      # 内存优化配置
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+      POSTGRES_WORK_MEM: 4MB
+      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
+    ports:
+      - "127.0.0.1:5432:5432"  # 只允许本地访问
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/prisma/migrations:/docker-entrypoint-initdb.d
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U learnflow_user -d learnflow"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - learnflow-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # 后端服务 - 优化内存和CPU使用
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.production
+    container_name: learnflow-backend
+    restart: always
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://learnflow_user:${POSTGRES_PASSWORD:-learnflow_password}@postgres:5432/learnflow
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      PORT: 3000
+      # Node.js 内存优化
+      NODE_OPTIONS: "--max-old-space-size=512"
+    ports:
+      - "127.0.0.1:3000:3000"  # 只允许本地访问
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    networks:
+      - learnflow-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # 前端服务 - 使用轻量级Nginx
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.production
+    container_name: learnflow-frontend
+    restart: always
+    ports:
+      - "127.0.0.1:80:80"  # 只允许本地访问
+    depends_on:
+      - backend
+    networks:
+      - learnflow-network
+    volumes:
+      - ./nginx.production.conf:/etc/nginx/nginx.conf:ro
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  # Nginx 反向代理 - 轻量级配置
+  nginx:
+    image: nginx:alpine
+    container_name: learnflow-nginx
+    restart: always
+    ports:
+      - "80:80"  # 外部访问端口
+    volumes:
+      - ./nginx.production.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro  # SSL证书目录
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - learnflow-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  learnflow-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: learnflow-br0
+

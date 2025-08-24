@@ -1,0 +1,123 @@
+# LearnFlow 前端 .gitignore
+
+# 依赖
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 构建输出
+dist/
+build/
+out/
+
+# 环境变量
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 日志文件
+*.log
+logs/
+
+# 运行时数据
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 覆盖率目录
+coverage/
+*.lcov
+
+# nyc测试覆盖率
+.nyc_output
+
+# Grunt中间存储
+.grunt
+
+# Bower依赖目录
+bower_components
+
+# node-waf配置
+.lock-wscript
+
+# 编译二进制文件
+build/Release
+
+# 依赖目录
+jspm_packages/
+
+# TypeScript缓存
+*.tsbuildinfo
+
+# 可选的npm缓存目录
+.npm
+
+# 可选的eslint缓存
+.eslintcache
+
+# 微前端模块
+.vercel
+
+# 本地环境文件
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 调试日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 本地Netlify文件夹
+.netlify
+
+# Vite
+.vite/
+*.local
+
+# 编辑器目录和文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统生成的文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 测试文件
+test-results/
+playwright-report/
+playwright/.cache/
+
+# 临时文件
+*.tmp
+*.temp
+.cache/
+
+# 分析文件
+bundle-analyzer-report.html
+webpack-bundle-analyzer-report.html
+
+# 性能分析
+*.prof
+*.cpuprofile
+*.heapsnapshot
+
+# 本地配置
+vite.config.local.ts
+tailwind.config.local.js
+postcss.config.local.js

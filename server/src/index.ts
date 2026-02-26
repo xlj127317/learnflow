@@ -12,16 +12,18 @@ import checkinRoutes from './routes/checkins';
 import aiTaskRoutes from './routes/aiTasks';
 import prisma from './shared/prisma';
 import logger from './shared/logger';
+import { validateEnv } from './shared/env';
 
 // 导入 Passport 配置
 import passport from './config/passport';
 
-// 加载环境变量
+// 加载环境变量并校验
 dotenv.config();
+const env = validateEnv();
 
 // 创建 Express 应用
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = env.PORT;
 
 // 全局中间件
 app.use(helmet({

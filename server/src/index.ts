@@ -3,31 +3,30 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
-
 // 导入路由
 import authRoutes from './routes/auth';
 import goalRoutes from './routes/goals';
 import planRoutes from './routes/plans';
 import taskRoutes from './routes/tasks';
 import checkinRoutes from './routes/checkins';
-import aiTaskRoutes, { initPrisma as initAiTaskPrisma } from './routes/aiTasks';
+import aiTaskRoutes from './routes/aiTasks';
+import reviewRoutes from './routes/reviews';
+import achievementRoutes from './routes/achievements';
+import adaptiveRoutes from './routes/adaptive';
+import prisma from './shared/prisma';
+import logger from './shared/logger';
+import { validateEnv } from './shared/env';
 
 // 导入 Passport 配置
 import passport from './config/passport';
 
-// 加载环境变量
+// 加载环境变量并校验
 dotenv.config();
+const env = validateEnv();
 
 // 创建 Express 应用
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// 创建 Prisma 客户端
-const prisma = new PrismaClient();
-
-// 初始化各个路由的Prisma客户端
-initAiTaskPrisma(prisma);
+const PORT = env.PORT;
 
 // 全局中间件
 app.use(helmet({
@@ -99,6 +98,9 @@ app.use('/api/plans', planRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/checkins', checkinRoutes);
 app.use('/api/ai-tasks', aiTaskRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/achievements', achievementRoutes);
+app.use('/api/adaptive', adaptiveRoutes);
 
 // 404 处理
 app.use('*', (req, res) => {
@@ -110,8 +112,15 @@ app.use('*', (req, res) => {
 });
 
 // 全局错误处理中间件
-app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('全局错误处理:', error);
+app.use((error: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  // AppError — 业务逻辑主动抛出的已知错误
+  if (error.name === 'AppError') {
+    return res.status(error.statusCode).json({
+      error: error.code || 'AppError',
+      message: error.message,
+      ...(error.details && { details: error.details }),
+    });
+  }
 
   // Prisma 错误处理
   if (error.code === 'P2002') {
@@ -125,15 +134,6 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
     return res.status(404).json({
       error: 'Not Found',
       message: '请求的资源不存在',
-    });
-  }
-
-  // 验证错误
-  if (error.name === 'ValidationError') {
-    return res.status(400).json({
-      error: 'Validation Error',
-      message: '数据验证失败',
-      details: error.errors,
     });
   }
 
@@ -152,7 +152,8 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
     });
   }
 
-  // 默认服务器错误
+  // 未知错误
+  logger.error('未处理的错误', error);
   res.status(500).json({
     error: 'Server Error',
     message: process.env.NODE_ENV === 'production' 
@@ -164,16 +165,14 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 
 // 优雅关闭处理
 async function gracefulShutdown(signal: string) {
-  console.log(`收到 ${signal} 信号，开始优雅关闭...`);
+  logger.info(`收到 ${signal} 信号，开始优雅关闭...`);
   
   try {
-    // 断开 Prisma 连接
     await prisma.$disconnect();
-    console.log('Prisma 连接已断开');
-    
+    logger.info('Prisma 连接已断开');
     process.exit(0);
   } catch (error) {
-    console.error('优雅关闭失败:', error);
+    logger.error('优雅关闭失败', error as Error);
     process.exit(1);
   }
 }
@@ -184,12 +183,12 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // 未捕获异常处理
 process.on('uncaughtException', (error) => {
-  console.error('未捕获的异常:', error);
+  logger.error('未捕获的异常', error);
   gracefulShutdown('uncaughtException');
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('未处理的 Promise 拒绝:', reason, 'at:', promise);
+process.on('unhandledRejection', (reason) => {
+  logger.error('未处理的 Promise 拒绝', { reason });
   gracefulShutdown('unhandledRejection');
 });
 
@@ -198,17 +197,17 @@ async function startServer() {
   try {
     // 测试数据库连接
     await prisma.$connect();
-    console.log('✅ 数据库连接成功');
+    logger.info('数据库连接成功');
 
     app.listen(PORT, () => {
-      console.log(`🚀 LearnFlow 服务器运行在端口 ${PORT}`);
-      console.log(`🌍 环境: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`📱 客户端地址: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
-      console.log(`🔑 JWT 配置: ${process.env.JWT_SECRET ? '已配置' : '未配置'}`);
-      console.log(`🤖 AI 服务: ${process.env.OPENROUTER_API_KEY ? '已配置' : '未配置'}`);
+      logger.info(`LearnFlow 服务器运行在端口 ${PORT}`);
+      logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`客户端地址: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+      logger.info(`JWT: ${process.env.JWT_SECRET ? '已配置' : '未配置'}`);
+      logger.info(`AI 服务: ${process.env.OPENROUTER_API_KEY ? '已配置' : '未配置'}`);
     });
   } catch (error) {
-    console.error('❌ 服务器启动失败:', error);
+    logger.error('服务器启动失败', error as Error);
     process.exit(1);
   }
 }

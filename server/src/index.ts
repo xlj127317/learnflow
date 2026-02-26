@@ -11,6 +11,7 @@ import taskRoutes from './routes/tasks';
 import checkinRoutes from './routes/checkins';
 import aiTaskRoutes from './routes/aiTasks';
 import prisma from './shared/prisma';
+import logger from './shared/logger';
 
 // 导入 Passport 配置
 import passport from './config/passport';
@@ -144,7 +145,7 @@ app.use((error: any, req: express.Request, res: express.Response, _next: express
   }
 
   // 未知错误
-  console.error('未处理的错误:', error);
+  logger.error('未处理的错误', error);
   res.status(500).json({
     error: 'Server Error',
     message: process.env.NODE_ENV === 'production' 
@@ -156,16 +157,14 @@ app.use((error: any, req: express.Request, res: express.Response, _next: express
 
 // 优雅关闭处理
 async function gracefulShutdown(signal: string) {
-  console.log(`收到 ${signal} 信号，开始优雅关闭...`);
+  logger.info(`收到 ${signal} 信号，开始优雅关闭...`);
   
   try {
-    // 断开 Prisma 连接
     await prisma.$disconnect();
-    console.log('Prisma 连接已断开');
-    
+    logger.info('Prisma 连接已断开');
     process.exit(0);
   } catch (error) {
-    console.error('优雅关闭失败:', error);
+    logger.error('优雅关闭失败', error as Error);
     process.exit(1);
   }
 }
@@ -176,12 +175,12 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // 未捕获异常处理
 process.on('uncaughtException', (error) => {
-  console.error('未捕获的异常:', error);
+  logger.error('未捕获的异常', error);
   gracefulShutdown('uncaughtException');
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('未处理的 Promise 拒绝:', reason, 'at:', promise);
+process.on('unhandledRejection', (reason) => {
+  logger.error('未处理的 Promise 拒绝', { reason });
   gracefulShutdown('unhandledRejection');
 });
 
@@ -190,17 +189,17 @@ async function startServer() {
   try {
     // 测试数据库连接
     await prisma.$connect();
-    console.log('✅ 数据库连接成功');
+    logger.info('数据库连接成功');
 
     app.listen(PORT, () => {
-      console.log(`🚀 LearnFlow 服务器运行在端口 ${PORT}`);
-      console.log(`🌍 环境: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`📱 客户端地址: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
-      console.log(`🔑 JWT 配置: ${process.env.JWT_SECRET ? '已配置' : '未配置'}`);
-      console.log(`🤖 AI 服务: ${process.env.OPENROUTER_API_KEY ? '已配置' : '未配置'}`);
+      logger.info(`LearnFlow 服务器运行在端口 ${PORT}`);
+      logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`客户端地址: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+      logger.info(`JWT: ${process.env.JWT_SECRET ? '已配置' : '未配置'}`);
+      logger.info(`AI 服务: ${process.env.OPENROUTER_API_KEY ? '已配置' : '未配置'}`);
     });
   } catch (error) {
-    console.error('❌ 服务器启动失败:', error);
+    logger.error('服务器启动失败', error as Error);
     process.exit(1);
   }
 }

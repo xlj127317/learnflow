@@ -1,4 +1,5 @@
 import axios from 'axios';
+import logger from '../shared/logger';
 
 export interface WeeklyPlan {
   week: number;
@@ -42,7 +43,7 @@ class AIService {
     this.baseURL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
     
     if (!this.apiKey) {
-      console.warn('警告: OpenRouter API Key 未配置，AI 功能将不可用');
+      logger.warn('OpenRouter API Key 未配置，AI 功能将不可用');
     }
   }
 

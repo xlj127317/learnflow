@@ -1,7 +1,4 @@
-version: '3.8'
-
 services:
-  # PostgreSQL 数据库
   postgres:
     image: postgres:15-alpine
     container_name: learnflow-postgres
@@ -9,21 +6,17 @@ services:
     environment:
       POSTGRES_DB: learnflow
       POSTGRES_USER: learnflow_user
-      POSTGRES_PASSWORD: learnflow_password
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-learnflow_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./server/prisma/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U learnflow_user -d learnflow"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 5
     networks:
       - learnflow-network
 
-  # 后端服务
   backend:
     build:
       context: ./server
@@ -32,26 +25,25 @@ services:
     restart: always
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://learnflow_user:learnflow_password@postgres:5432/learnflow
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      DATABASE_URL: postgresql://learnflow_user:${POSTGRES_PASSWORD:-learnflow_password}@postgres:5432/learnflow
+      JWT_SECRET: ${JWT_SECRET}
       PORT: 3000
-    ports:
-      - "3000:3000"
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-gpt-3.5-turbo}
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./server:/app
-      - /app/node_modules
     networks:
       - learnflow-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 15s
+      timeout: 5s
       retries: 3
+      start_period: 15s
 
-  # 前端服务
   frontend:
     build:
       context: ./client
@@ -59,27 +51,10 @@ services:
     container_name: learnflow-frontend
     restart: always
     ports:
-      - "80:80"
+      - "${PORT:-80}:80"
     depends_on:
-      - backend
-    networks:
-      - learnflow-network
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-
-  # Nginx 反向代理
-  nginx:
-    image: nginx:alpine
-    container_name: learnflow-nginx
-    restart: always
-    ports:
-      - "8080:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - frontend
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - learnflow-network
 

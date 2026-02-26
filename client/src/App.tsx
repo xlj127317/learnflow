@@ -1,35 +1,34 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './components/Toast';
 import LoginPage from './components/LoginPage';
-import Dashboard from './components/Dashboard';
-import PlannerPage from './components/PlannerPage';
-import PlanDetailPage from './components/PlanDetailPage';
-import PlanListPage from './components/PlanListPage';
-import TaskDetailPage from './components/TaskDetailPage';
-import TaskListPage from './components/TaskListPage';
-import CheckinPage from './components/CheckinPage';
-import GoalFormPage from './components/GoalFormPage';
-import GoalListPage from './components/GoalListPage';
-import GoalDetailPage from './components/GoalDetailPage';
-import ProfilePage from './components/ProfilePage';
 import Layout from './components/Layout';
+import PageSkeleton from './components/Skeleton';
 
 import './App.css';
+
+// 路由懒加载
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const PlannerPage = lazy(() => import('./components/PlannerPage'));
+const PlanDetailPage = lazy(() => import('./components/PlanDetailPage'));
+const PlanListPage = lazy(() => import('./components/PlanListPage'));
+const TaskDetailPage = lazy(() => import('./components/TaskDetailPage'));
+const TaskListPage = lazy(() => import('./components/TaskListPage'));
+const CheckinPage = lazy(() => import('./components/CheckinPage'));
+const GoalFormPage = lazy(() => import('./components/GoalFormPage'));
+const GoalListPage = lazy(() => import('./components/GoalListPage'));
+const GoalDetailPage = lazy(() => import('./components/GoalDetailPage'));
+const ProfilePage = lazy(() => import('./components/ProfilePage'));
+const ReviewPage = lazy(() => import('./components/ReviewPage'));
+const AchievementPage = lazy(() => import('./components/AchievementPage'));
 
 // 受保护的路由组件
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="spinner w-8 h-8 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">加载中...</p>
-        </div>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   if (!isAuthenticated) {
@@ -42,17 +41,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // OAuth 回调页面
 function AuthCallback() {
   const { isAuthenticated, isLoading, error } = useAuth();
-  
-  console.log('AuthCallback 组件状态:', {
-    isAuthenticated,
-    isLoading,
-    error,
-    pathname: window.location.pathname,
-    search: window.location.search
-  });
 
   if (isLoading) {
-    console.log('显示加载状态...');
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -64,143 +54,62 @@ function AuthCallback() {
   }
 
   if (error) {
-    console.log('显示错误状态，重定向到登录页面...');
     return <Navigate to={`/login?error=${encodeURIComponent(error)}`} replace />;
   }
 
-  if (isAuthenticated) {
-    console.log('用户已认证，重定向到仪表板...');
-    return <Navigate to="/dashboard" replace />;
-  } else {
-    console.log('用户未认证，重定向到登录页面...');
-    return <Navigate to="/login" replace />;
-  }
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
+}
+
+// 懒加载路由包装
+function LazyProtected({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <Suspense fallback={<PageSkeleton />}>
+        {children}
+      </Suspense>
+    </ProtectedRoute>
+  );
 }
 
 // 主应用路由
 function AppRoutes() {
   return (
     <Routes>
-            
       {/* 公开路由 */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
-      
-      {/* 受保护的路由 */}
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/planner" 
-        element={
-          <ProtectedRoute>
-            <PlannerPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/plans/:id" 
-        element={
-          <ProtectedRoute>
-            <PlanDetailPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/plans" 
-        element={
-          <ProtectedRoute>
-            <PlanListPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/tasks" 
-        element={
-          <ProtectedRoute>
-            <TaskListPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/tasks/:id" 
-        element={
-          <ProtectedRoute>
-            <TaskDetailPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/checkin" 
-        element={
-          <ProtectedRoute>
-            <CheckinPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/goals/new" 
-        element={
-          <ProtectedRoute>
-            <GoalFormPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/goals/:id/edit" 
-        element={
-          <ProtectedRoute>
-            <GoalFormPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/goals/:id" 
-        element={
-          <ProtectedRoute>
-            <GoalDetailPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/goals" 
-        element={
-          <ProtectedRoute>
-            <GoalListPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/profile" 
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        } 
-      />
-      
-              {/* 默认重定向 */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      
-      {/* 404 页面 */}
-      <Route 
-        path="*" 
+
+      {/* 受保护的路由 — 懒加载 */}
+      <Route path="/dashboard" element={<LazyProtected><Dashboard /></LazyProtected>} />
+      <Route path="/planner" element={<LazyProtected><PlannerPage /></LazyProtected>} />
+      <Route path="/plans/:id" element={<LazyProtected><PlanDetailPage /></LazyProtected>} />
+      <Route path="/plans" element={<LazyProtected><PlanListPage /></LazyProtected>} />
+      <Route path="/tasks" element={<LazyProtected><TaskListPage /></LazyProtected>} />
+      <Route path="/tasks/:id" element={<LazyProtected><TaskDetailPage /></LazyProtected>} />
+      <Route path="/checkin" element={<LazyProtected><CheckinPage /></LazyProtected>} />
+      <Route path="/goals/new" element={<LazyProtected><GoalFormPage /></LazyProtected>} />
+      <Route path="/goals/:id/edit" element={<LazyProtected><GoalFormPage /></LazyProtected>} />
+      <Route path="/goals/:id" element={<LazyProtected><GoalDetailPage /></LazyProtected>} />
+      <Route path="/goals" element={<LazyProtected><GoalListPage /></LazyProtected>} />
+      <Route path="/profile" element={<LazyProtected><ProfilePage /></LazyProtected>} />
+      <Route path="/reviews" element={<LazyProtected><ReviewPage /></LazyProtected>} />
+      <Route path="/achievements" element={<LazyProtected><AchievementPage /></LazyProtected>} />
+
+      {/* 默认重定向 */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+      {/* 404 */}
+      <Route
+        path="*"
         element={
           <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
             <div className="text-center">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">404</h1>
               <p className="text-gray-600 dark:text-gray-400 mb-4">页面未找到</p>
-              <a href="/dashboard" className="btn-primary">
-                返回首页
-              </a>
+              <a href="/dashboard" className="btn-primary">返回首页</a>
             </div>
           </div>
-        } 
+        }
       />
     </Routes>
   );
@@ -209,11 +118,13 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Layout>
-          <AppRoutes />
-        </Layout>
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <Layout>
+            <AppRoutes />
+          </Layout>
+        </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }

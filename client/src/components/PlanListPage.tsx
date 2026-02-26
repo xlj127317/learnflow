@@ -14,11 +14,25 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { planApi } from '../services/api';
+import { useToast } from './Toast';
+import { TrashIcon } from '@heroicons/react/24/outline';
 import type { Plan } from '../types';
 
 export default function PlanListPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
+
+  const handleDeletePlan = async (planId: string, title: string) => {
+    if (!confirm(`确定要删除计划"${title}"吗？此操作不可撤销。`)) return;
+    try {
+      await planApi.deletePlan(planId);
+      setPlans(prev => prev.filter(p => p.id !== planId));
+      toast.success('计划已删除');
+    } catch {
+      toast.error('删除计划失败');
+    }
+  };
 
   // 状态管理
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -344,6 +358,13 @@ export default function PlanListPage() {
                         继续学习
                       </Link>
                     )}
+                    <button
+                      onClick={() => handleDeletePlan(plan.id, plan.title)}
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                      title="删除计划"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               </div>

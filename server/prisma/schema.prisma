@@ -42,6 +42,7 @@ model User {
   aiTaskCompletions AITaskCompletion[]
   checkins Checkin[]
   reviews  Review[]
+  achievements UserAchievement[]
 
   @@map("users")
 }
@@ -155,4 +156,33 @@ model Review {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
+}
+
+// 成就模型
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique // 唯一标识：streak_7, first_goal, focus_4h 等
+  title       String
+  description String
+  icon        String   // emoji 图标
+  condition   String   // 解锁条件描述
+  category    String   // 分类：streak, milestone, effort
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+// 用户成就解锁记录
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime    @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
 }

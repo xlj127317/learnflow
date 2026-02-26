@@ -15,6 +15,7 @@ import { goalApi, checkinApi, taskApi } from '../services/api';
 import StudyTimeChart from './charts/StudyTimeChart';
 import ProgressChart from './charts/ProgressChart';
 import CheckinCalendar from './charts/CheckinCalendar';
+import PomodoroTimer from './PomodoroTimer';
 import type { Goal, Checkin, Task, CheckinStats } from '../types';
 
 export default function Dashboard() {
@@ -476,6 +477,11 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* 番茄钟 */}
+        <div className="mt-8">
+          <PomodoroTimer />
         </div>
       </div>
   );

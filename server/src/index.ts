@@ -103,8 +103,15 @@ app.use('*', (req, res) => {
 });
 
 // 全局错误处理中间件
-app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('全局错误处理:', error);
+app.use((error: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  // AppError — 业务逻辑主动抛出的已知错误
+  if (error.name === 'AppError') {
+    return res.status(error.statusCode).json({
+      error: error.code || 'AppError',
+      message: error.message,
+      ...(error.details && { details: error.details }),
+    });
+  }
 
   // Prisma 错误处理
   if (error.code === 'P2002') {
@@ -118,15 +125,6 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
     return res.status(404).json({
       error: 'Not Found',
       message: '请求的资源不存在',
-    });
-  }
-
-  // 验证错误
-  if (error.name === 'ValidationError') {
-    return res.status(400).json({
-      error: 'Validation Error',
-      message: '数据验证失败',
-      details: error.errors,
     });
   }
 
@@ -145,7 +143,8 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
     });
   }
 
-  // 默认服务器错误
+  // 未知错误
+  console.error('未处理的错误:', error);
   res.status(500).json({
     error: 'Server Error',
     message: process.env.NODE_ENV === 'production' 

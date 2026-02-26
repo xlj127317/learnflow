@@ -2,11 +2,10 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GitHubStrategy } from 'passport-github2';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
-import { PrismaClient, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { generateToken } from '../middleware/auth';
 import crypto from 'crypto';
-
-const prisma = new PrismaClient();
+import prisma from '../shared/prisma';
 
 // 生成随机密码的辅助函数
 function generateRandomPassword(): string {

@@ -1,12 +1,12 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
-import { PrismaClient, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { generateToken, requireAuth, AuthenticatedRequest } from '../middleware/auth';
 import passport from '../config/passport';
+import prisma from '../shared/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * POST /api/auth/register

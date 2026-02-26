@@ -1,16 +1,8 @@
 import express from 'express';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../shared/prisma';
 
 const router = express.Router();
-
-// 从主文件导入Prisma客户端
-let prisma: PrismaClient;
-
-// 初始化函数，由主文件调用
-export function initPrisma(prismaClient: PrismaClient) {
-  prisma = prismaClient;
-}
 
 // 获取AI任务完成状态
 router.get('/:planId', requireAuth, async (req: any, res, next) => {

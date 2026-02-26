@@ -3,15 +3,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
-
 // 导入路由
 import authRoutes from './routes/auth';
 import goalRoutes from './routes/goals';
 import planRoutes from './routes/plans';
 import taskRoutes from './routes/tasks';
 import checkinRoutes from './routes/checkins';
-import aiTaskRoutes, { initPrisma as initAiTaskPrisma } from './routes/aiTasks';
+import aiTaskRoutes from './routes/aiTasks';
+import prisma from './shared/prisma';
 
 // 导入 Passport 配置
 import passport from './config/passport';
@@ -22,12 +21,6 @@ dotenv.config();
 // 创建 Express 应用
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// 创建 Prisma 客户端
-const prisma = new PrismaClient();
-
-// 初始化各个路由的Prisma客户端
-initAiTaskPrisma(prisma);
 
 // 全局中间件
 app.use(helmet({

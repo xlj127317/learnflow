@@ -5,6 +5,7 @@ import type {
   Plan,
   Task,
   Checkin,
+  Review,
   AuthResponse,
   LoginCredentials,
   RegisterCredentials,
@@ -99,6 +100,18 @@ export const authApi = {
   // GitHub OAuth
   githubLogin: (): void => {
     window.location.href = `${api.defaults.baseURL}/auth/github`;
+  },
+
+  // 更新用户资料
+  updateProfile: async (data: { name?: string; avatar?: string }): Promise<{ user: User; message: string }> => {
+    const response = await api.put('/auth/profile', data);
+    return response.data;
+  },
+
+  // 修改密码
+  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => {
+    const response = await api.put('/auth/password', data);
+    return response.data;
   },
 };
 
@@ -367,6 +380,58 @@ export const aiTaskApi = {
     message: string;
   }> => {
     const response = await api.put(`/ai-tasks/${planId}/batch`, { completions });
+    return response.data;
+  },
+};
+
+// 复盘 API
+export const reviewApi = {
+  getReviews: async (period?: 'weekly' | 'monthly' | 'quarterly'): Promise<{ reviews: Review[] }> => {
+    const params = period ? { period } : undefined;
+    const response = await api.get('/reviews', { params });
+    return response.data;
+  },
+
+  getReview: async (id: string): Promise<{ review: Review }> => {
+    const response = await api.get(`/reviews/${id}`);
+    return response.data;
+  },
+
+  createReview: async (data: { period: string; content: string }): Promise<{ review: Review; message: string }> => {
+    const response = await api.post('/reviews', data);
+    return response.data;
+  },
+
+  updateReview: async (id: string, data: { content?: string; period?: string }): Promise<{ review: Review; message: string }> => {
+    const response = await api.put(`/reviews/${id}`, data);
+    return response.data;
+  },
+
+  deleteReview: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/reviews/${id}`);
+    return response.data;
+  },
+};
+
+// 成就 API
+export const achievementApi = {
+  getAchievements: async (): Promise<{
+    achievements: Array<{
+      id: string; key: string; title: string; description: string;
+      icon: string; condition: string; category: string;
+      unlocked: boolean; unlockedAt: string | null;
+    }>;
+    unlockedCount: number;
+    totalCount: number;
+  }> => {
+    const response = await api.get('/achievements');
+    return response.data;
+  },
+
+  checkAchievements: async (): Promise<{
+    newlyUnlocked: Array<{ key: string; title: string; icon: string }>;
+  }> => {
+    const response = await api.post('/achievements/check');
     return response.data;
   },
 };

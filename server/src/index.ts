@@ -10,6 +10,9 @@ import planRoutes from './routes/plans';
 import taskRoutes from './routes/tasks';
 import checkinRoutes from './routes/checkins';
 import aiTaskRoutes from './routes/aiTasks';
+import reviewRoutes from './routes/reviews';
+import achievementRoutes from './routes/achievements';
+import adaptiveRoutes from './routes/adaptive';
 import prisma from './shared/prisma';
 import logger from './shared/logger';
 import { validateEnv } from './shared/env';
@@ -95,6 +98,9 @@ app.use('/api/plans', planRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/checkins', checkinRoutes);
 app.use('/api/ai-tasks', aiTaskRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/achievements', achievementRoutes);
+app.use('/api/adaptive', adaptiveRoutes);
 
 // 404 处理
 app.use('*', (req, res) => {

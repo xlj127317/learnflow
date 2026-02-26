@@ -10,10 +10,18 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import { authApi } from '../services/api';
+import { useToast } from './Toast';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, updateUser, logout } = useAuth();
+  const toast = useToast();
+
+  // 密码修改状态
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // 状态管理
   const [isEditing, setIsEditing] = useState(false);
@@ -73,14 +81,10 @@ export default function ProfilePage() {
       setIsLoading(true);
       setError(null);
 
-      // 这里应该调用更新用户信息的API
-      // 暂时使用本地更新，实际项目中需要后端API支持
-      updateUser({
-        name: formData.name,
-        email: formData.email,
-      });
+      const result = await authApi.updateProfile({ name: formData.name.trim() });
+      updateUser(result.user);
 
-      setSuccess('个人信息更新成功！');
+      toast.success('个人信息更新成功');
       setIsEditing(false);
 
       // 3秒后清除成功消息
@@ -406,22 +410,8 @@ export default function ProfilePage() {
                         上次更新：暂未实现
                       </p>
                     </div>
-                    <button className="btn-outline text-sm" disabled>
+                    <button onClick={() => setShowPasswordModal(true)} className="btn-outline text-sm">
                       修改密码
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                        两步验证
-                      </h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        增强账户安全性
-                      </p>
-                    </div>
-                    <button className="btn-outline text-sm" disabled>
-                      设置
                     </button>
                   </div>
                 </div>
@@ -429,6 +419,62 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* 修改密码弹窗 */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">修改密码</h3>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (passwordData.newPassword !== passwordData.confirmPassword) {
+                  toast.error('两次输入的新密码不一致');
+                  return;
+                }
+                if (passwordData.newPassword.length < 6) {
+                  toast.error('新密码长度至少 6 个字符');
+                  return;
+                }
+                try {
+                  setPasswordLoading(true);
+                  await authApi.changePassword({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword,
+                  });
+                  toast.success('密码修改成功');
+                  setShowPasswordModal(false);
+                  setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                } catch {
+                  toast.error('当前密码错误');
+                } finally {
+                  setPasswordLoading(false);
+                }
+              }} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">当前密码</label>
+                  <input type="password" required className="input w-full" value={passwordData.currentPassword}
+                    onChange={e => setPasswordData(p => ({ ...p, currentPassword: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">新密码</label>
+                  <input type="password" required minLength={6} className="input w-full" value={passwordData.newPassword}
+                    onChange={e => setPasswordData(p => ({ ...p, newPassword: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">确认新密码</label>
+                  <input type="password" required className="input w-full" value={passwordData.confirmPassword}
+                    onChange={e => setPasswordData(p => ({ ...p, confirmPassword: e.target.value }))} />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button type="submit" disabled={passwordLoading} className="flex-1 btn-primary">
+                    {passwordLoading ? '修改中...' : '确认修改'}
+                  </button>
+                  <button type="button" onClick={() => setShowPasswordModal(false)} className="btn-outline">取消</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
   );
 }

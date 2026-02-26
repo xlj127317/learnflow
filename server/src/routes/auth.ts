@@ -313,4 +313,93 @@ router.post('/logout', requireAuth, async (req: AuthenticatedRequest, res: Respo
   });
 });
 
+/**
+ * PUT /api/auth/profile
+ * 更新用户资料
+ */
+router.put(
+  '/profile',
+  requireAuth,
+  [
+    body('name').optional().isLength({ min: 2, max: 50 }).withMessage('用户名长度必须在2-50个字符之间'),
+    body('avatar').optional().isString(),
+  ],
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        res.status(400).json({ error: 'Validation Error', details: errors.array() });
+        return;
+      }
+
+      const userId = req.user!.id;
+      const { name, avatar } = req.body;
+
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(name && { name }),
+          ...(avatar !== undefined && { avatar }),
+        },
+        select: { id: true, email: true, name: true, role: true, avatar: true, createdAt: true },
+      });
+
+      res.json({ message: '资料更新成功', user });
+    } catch (error) {
+      console.error('更新用户资料错误:', error);
+      res.status(500).json({ error: 'Server Error', message: '更新用户资料失败' });
+    }
+  }
+);
+
+/**
+ * PUT /api/auth/password
+ * 修改密码
+ */
+router.put(
+  '/password',
+  requireAuth,
+  [
+    body('currentPassword').notEmpty().withMessage('请输入当前密码'),
+    body('newPassword').isLength({ min: 6 }).withMessage('新密码长度至少6个字符'),
+  ],
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        res.status(400).json({ error: 'Validation Error', details: errors.array() });
+        return;
+      }
+
+      const userId = req.user!.id;
+      const { currentPassword, newPassword } = req.body;
+
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        res.status(404).json({ error: 'Not Found', message: '用户不存在' });
+        return;
+      }
+
+      const isValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isValid) {
+        res.status(401).json({ error: 'Unauthorized', message: '当前密码错误' });
+        return;
+      }
+
+      const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || '12');
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+      });
+
+      res.json({ message: '密码修改成功' });
+    } catch (error) {
+      console.error('修改密码错误:', error);
+      res.status(500).json({ error: 'Server Error', message: '修改密码失败' });
+    }
+  }
+);
+
 export default router;

@@ -20,6 +20,8 @@ const GoalFormPage = lazy(() => import('./components/GoalFormPage'));
 const GoalListPage = lazy(() => import('./components/GoalListPage'));
 const GoalDetailPage = lazy(() => import('./components/GoalDetailPage'));
 const ProfilePage = lazy(() => import('./components/ProfilePage'));
+const ReviewPage = lazy(() => import('./components/ReviewPage'));
+const AchievementPage = lazy(() => import('./components/AchievementPage'));
 
 // 受保护的路由组件
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -90,6 +92,8 @@ function AppRoutes() {
       <Route path="/goals/:id" element={<LazyProtected><GoalDetailPage /></LazyProtected>} />
       <Route path="/goals" element={<LazyProtected><GoalListPage /></LazyProtected>} />
       <Route path="/profile" element={<LazyProtected><ProfilePage /></LazyProtected>} />
+      <Route path="/reviews" element={<LazyProtected><ReviewPage /></LazyProtected>} />
+      <Route path="/achievements" element={<LazyProtected><AchievementPage /></LazyProtected>} />
 
       {/* 默认重定向 */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

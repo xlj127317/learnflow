@@ -132,6 +132,8 @@ ${specificRequirements ? `**特殊要求**: ${specificRequirements}` : ''}
 2. 任务应该循序渐进，符合学习规律
 3. Mermaid 代码应该展示学习进度和关键节点
 4. 每个任务要有明确的时间估算
+5. 在每周计划中额外添加 "resources" 数组，推荐 2-3 个学习资源（书籍、文章、视频、练习项目），格式：
+   "resources": [{"type": "book"|"article"|"video"|"project", "title": "资源名称", "url": "链接或搜索建议", "description": "简短说明"}]
 5. 确保 JSON 格式正确，可以直接解析
 
 请现在开始生成学习计划：`;

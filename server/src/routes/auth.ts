@@ -1,12 +1,12 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
-import { PrismaClient, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { generateToken, requireAuth, AuthenticatedRequest } from '../middleware/auth';
 import passport from '../config/passport';
+import prisma from '../shared/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * POST /api/auth/register
@@ -125,12 +125,7 @@ router.post(
         return;
       }
 
-      // 这里应该验证密码，但由于我们的 schema 中没有存储密码字段
-      // 实际项目中需要在 schema 中添加 password 字段
-      // const isValidPassword = await bcrypt.compare(password, user.password);
-
-      // 临时跳过密码验证，实际应用中需要实现
-      const isValidPassword = true;
+      const isValidPassword = await bcrypt.compare(password, user.password);
 
       if (!isValidPassword) {
         res.status(401).json({

@@ -1,10 +1,9 @@
 import { Router, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
-import { PrismaClient } from '@prisma/client';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
+import prisma from '../shared/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // 所有路由都需要认证
 router.use(requireAuth);
